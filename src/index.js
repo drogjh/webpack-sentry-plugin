@@ -1,5 +1,5 @@
-import request from 'request-promise'
-import fs from 'fs'
+const request = require('request-promise')
+const fs = require('fs')
 
 const BASE_SENTRY_URL = 'https://sentry.io/api/0'
 
@@ -193,7 +193,7 @@ module.exports = class SentryPlugin {
   }
 
   uploadFile({ path, name }) {
-    let maxAttempts = 2
+    let maxAttempts = this.uploadFileRequestOptions.customMaxRetries || 2 // maxRetries
     const requestApi = () => {
       return request(
         this.combineRequestOptions(
