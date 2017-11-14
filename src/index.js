@@ -193,23 +193,33 @@ module.exports = class SentryPlugin {
   }
 
   uploadFile({ path, name }) {
-    return request(
-      this.combineRequestOptions(
-        {
-          url: `${this.sentryReleaseUrl()}/${this.releaseVersion}/files/`,
-          method: 'POST',
-          auth: {
-            bearer: this.apiKey,
+    let maxAttempts = 2
+    const requestApi = () => {
+      return request(
+        this.combineRequestOptions(
+          {
+            url: `${this.sentryReleaseUrl()}/${this.releaseVersion}/files/`,
+            method: 'POST',
+            auth: {
+              bearer: this.apiKey,
+            },
+            headers: {},
+            formData: {
+              file: fs.createReadStream(path),
+              name: this.filenameTransform(name),
+            },
           },
-          headers: {},
-          formData: {
-            file: fs.createReadStream(path),
-            name: this.filenameTransform(name),
-          },
-        },
-        this.uploadFileRequestOptions,
-      ),
-    )
+          this.uploadFileRequestOptions,
+        ),
+      ).catch(err => {
+        if (maxAttempts <= 0) {
+          return Promise.reject(err)
+        }
+        maxAttempts--
+        return requestApi()
+      })
+    }
+    return requestApi()
   }
 
   sentryReleaseUrl() {
